@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+    <main class="container">
+
+        <h3  class="text-center">Лекция</h3>
+
+        <span>Аудитория: {{ lecture.room }}</span>
+        <span>Дата: {{ lecture.date }}</span>
+
+        <h4 class="text-center">Специалисты</h4>
+
+        <div class="cards-wrapper d-flex flex-column">
+
+            {% for specialist in specialists %}
+
+                {% include "specialist_card.html" %}
+
+            {% endfor %}
+
+        </div>
+
+    </main>
+{% endblock content %}
