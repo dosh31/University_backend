@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+    <main class="container">
+
+        <h3  class="text-center">Черновая лекция</h3>
+
+         <div class="form-group">
+            <label class="form-label">Аудитория</label>
+            {% if lecture.room %}
+                <input placeholder="Введите строку" disabled type="text" class="form-control" style="width: 250px" value="{{ lecture.room }}">
+            {% else %}
+                <input placeholder="Введите строку" disabled type="text" class="form-control" style="width: 250px">
+            {% endif %}
+        </div>
+
+         <div class="form-group">
+            <label class="form-label">Дата</label>
+            {% if lecture.date %}
+                <input placeholder="Введите дату" disabled type="text" class="form-control" style="width: 250px" value="{{ lecture.date }}">
+            {% else %}
+                <input placeholder="Введите дату" disabled type="text" class="form-control" style="width: 250px">
+            {% endif %}
+        </div>
+
+        <form method="post" action="{% url 'delete_lecture' lecture.id %}">
+            {% csrf_token %}
+                <button class="btn btn-danger delete-draft-lecture-btn" type="submit">
+                    Удалить
+                </button>
+            </a>
+        </form>
+
+        <h4 class="text-center">Специалисты</h4>
+
+        <div class="cards-wrapper d-flex flex-column">
+
+            {% for specialist in lecture.get_specialists %}
+
+                {% include "specialist_card.html" %}
+
+            {% endfor %}
+
+        </div>
+
+    </main>
+{% endblock content %}

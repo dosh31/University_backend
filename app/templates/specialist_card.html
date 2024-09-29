@@ -1,0 +1,49 @@
+{% load static %}
+
+{% if "http://localhost:8000/lectures/" in request.build_absolute_uri or "http://127.0.0.1:8000/lectures/" in request.build_absolute_uri %}
+    <div class="card w-100 mb5">
+         <div class="row g-0">
+            <div class="col-md-6 d-flex justify-center">
+                <img src="{{ specialist.image.url }}">
+            </div>
+            <div class="col-md-6">
+                <div class="card-body">
+                    <h5 class="card-title">{{ specialist.name }}</h5>
+                    <div class="form-group">
+                        <label class="form-label">Комментарий</label>
+                        {% if specialist.value %}
+                            <input placeholder="Введите комментарий" disabled type="text" class="form-control" style="width: 250px" value="{{ specialist.value }}">
+                        {% else %}
+                            <input placeholder="Введите комментарий" disabled type="text" class="form-control" style="width: 250px">
+                        {% endif %}
+                    </div>
+                    <a href="/specialists/{{ specialist.id }}/" class="btn btn-primary" style="width: 100px">
+                        Открыть
+                    </a>
+                </div>
+            </div>
+         </div>
+    </div>
+{% else %}
+    <div class="card">
+        <img src="{{ specialist.image.url }}" class="specialist-preview" alt=""/>
+        <div class="card-body" >
+            <div class="card-info">
+                <h5 class="card-title">{{ specialist.name }}</h5>
+            </div>
+            <div class="row card-btns">
+                <div class="col d-flex justify-content-center flex-grow-1">
+                    <a href="/specialists/{{ specialist.id }}" class="btn btn-primary">
+                        Открыть
+                    </a>
+                </div>
+                <form method="post" action="{% url 'add_specialist_to_draft_lecture' specialist.id %}" class="col d-flex justify-content-center">
+                    {% csrf_token %}
+                    <button class="add-btn btn btn-secondary" type="submit">
+                        Добавить
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endif %}
