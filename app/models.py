@@ -75,3 +75,4 @@ class SpecialistLecture(models.Model):
         verbose_name = "м-м"
         verbose_name_plural = "м-м"
         db_table = "specialist_lecture"
+        unique_together = ('specialist', 'lecture')
