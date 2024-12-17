@@ -20,14 +20,12 @@ urlpatterns = [
     path('api/lectures/<int:lecture_id>/delete/', delete_lecture),  # DELETE
 
     # Набор методов для м-м
-    path('api/lectures/<int:lecture_id>/specialists/<int:specialist_id>/', get_specialist_lecture),  # GET
     path('api/lectures/<int:lecture_id>/update_specialist/<int:specialist_id>/', update_specialist_in_lecture),  # PUT
     path('api/lectures/<int:lecture_id>/delete_specialist/<int:specialist_id>/', delete_specialist_from_lecture),  # DELETE
 
     # Набор методов для аутентификации и авторизации
-    path("api/register/", register),  # POST
-    path("api/login/", login),  # POST
-    path("api/check/", check),  # POST
-    path("api/logout/", logout),  # POST
+    path("api/users/register/", register),  # POST
+    path("api/users/login/", login),  # POST
+    path("api/users/logout/", logout),  # POST
     path("api/users/<int:user_id>/update/", update_user)  # PUT
 ]

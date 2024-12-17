@@ -1,38 +1,45 @@
 import random
+from datetime import datetime, timedelta
 
-from app.jwt_helper import get_access_token, get_jwt_payload
+from django.utils import timezone
+
 from app.models import User
+
+from app.redis import session_storage
 
 
 def identity_user(request):
-    access_token = get_access_token(request)
+    session = get_session(request)
 
-    if access_token is None:
+    if session is None or session not in session_storage:
         return None
 
-    try:
-        payload = get_jwt_payload(access_token)
-        user_id = payload["user_id"]
-        user = User.objects.get(pk=user_id)
+    user_id = session_storage.get(session)
+    user = User.objects.get(pk=user_id)
 
-        return user
+    return user
 
-    except:
-        return None
+
+def get_session(request):
+    # Пробуем авторизоваться по куке session_id
+    if request.COOKIES.get("session_id"):
+        return request.COOKIES.get("session_id")
+
+    # Пробуем авторизоваться по заголовку Cookie
+    if request.headers.get("Cookie"):
+        return request.headers.get("Cookie").split(" ")[0]
 
     return None
 
 
-def random_text():
-    words = ["lorem", "ipsum", "dolor", "sit", "amet", "consectetur", "adipiscing", "elit", "cras", "eu", "blandit",
-           "lacus",  "vivamus", "tincidunt", "ante", "nec", "nunc", "tincidunt", "lacinia", "curabitur", "maximus",
-           "vulputate", "nisi", "vitae", "bibendum"]
+def random_date():
+    now = datetime.now(tz=timezone.utc)
+    return now + timedelta(random.uniform(-1, 0) * 100)
 
-    text = ""
 
-    for _ in range(random.randint(1, 10)):
-        text += random.choice(words) + " "
+def random_timedelta(factor=100):
+    return timedelta(random.uniform(0, 1) * factor)
 
-    text = text.strip().replace(text[0], text[0].upper(), 1)
 
-    return text
+def random_bool():
+    return bool(random.getrandbits(1))

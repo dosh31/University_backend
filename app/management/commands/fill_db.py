@@ -1,21 +1,18 @@
-import random
-
+from django.conf import settings
 from django.core.management.base import BaseCommand
 from minio import Minio
 
-from ...models import *
-from .utils import random_date, random_timedelta
+from .utils import *
+from app.models import *
 
 
 def add_users():
-    User.objects.create_user("user", "user@user.com", "1234")
-    User.objects.create_superuser("root", "root@root.com", "1234")
+    User.objects.create_user("user", "user@user.com", "1234", first_name="user", last_name="user")
+    User.objects.create_superuser("root", "root@root.com", "1234", first_name="root", last_name="root")
 
     for i in range(1, 10):
-        User.objects.create_user(f"user{i}", f"user{i}@user.com", "1234")
-        User.objects.create_superuser(f"root{i}", f"root{i}@root.com", "1234")
-
-    print("Пользователи созданы")
+        User.objects.create_user(f"user{i}", f"user{i}@user.com", "1234", first_name=f"user{i}", last_name=f"user{i}")
+        User.objects.create_superuser(f"root{i}", f"root{i}@root.com", "1234", first_name=f"user{i}", last_name=f"user{i}")
 
 
 def add_specialists():
@@ -55,42 +52,40 @@ def add_specialists():
         image="6.png"
     )
 
-    client = Minio("minio:9000", "minio", "minio123", secure=False)
-    client.fput_object('images', '1.png', "app/static/images/1.png")
-    client.fput_object('images', '2.png', "app/static/images/2.png")
-    client.fput_object('images', '3.png', "app/static/images/3.png")
-    client.fput_object('images', '4.png', "app/static/images/4.png")
-    client.fput_object('images', '5.png', "app/static/images/5.png")
-    client.fput_object('images', '6.png', "app/static/images/6.png")
-    client.fput_object('images', 'default.png', "app/static/images/default.png")
+    client = Minio(settings.MINIO_ENDPOINT,
+                   settings.MINIO_ACCESS_KEY,
+                   settings.MINIO_SECRET_KEY,
+                   secure=settings.MINIO_USE_HTTPS)
 
-    print("Услуги добавлены")
+    for i in range(1, 7):
+        client.fput_object(settings.MINIO_MEDIA_FILES_BUCKET, f'{i}.png', f"app/static/images/{i}.png")
+
+    client.fput_object(settings.MINIO_MEDIA_FILES_BUCKET, 'default.png', "app/static/images/default.png")
 
 
 def add_lectures():
-    users = User.objects.filter(is_superuser=False)
-    moderators = User.objects.filter(is_superuser=True)
-
-    if len(users) == 0 or len(moderators) == 0:
-        print("Заявки не могут быть добавлены. Сначала добавьте пользователей с помощью команды add_users")
-        return
-
+    users = User.objects.filter(is_staff=False)
+    moderators = User.objects.filter(is_staff=True)
     specialists = Specialist.objects.all()
 
     for _ in range(30):
         status = random.randint(2, 5)
-        add_lecture(status, specialists, users, moderators)
+        owner = random.choice(users)
+        add_lecture(status, specialists, owner, moderators)
 
-    add_lecture(1, specialists, users, moderators)
+    add_lecture(1, specialists, users[0], moderators)
+    add_lecture(2, specialists, users[0], moderators)
+    add_lecture(3, specialists, users[0], moderators)
+    add_lecture(4, specialists, users[0], moderators)
+    add_lecture(5, specialists, users[0], moderators)
 
-    print("Заявки добавлены")
 
-
-def add_lecture(status, specialists, users, moderators):
+def add_lecture(status, specialists, owner, moderators):
     lecture = Lecture.objects.create()
     lecture.status = status
 
-    if lecture.status in [3, 4]:
+    if status in [3, 4]:
+        lecture.moderator = random.choice(moderators)
         lecture.date_complete = random_date()
         lecture.date_formation = lecture.date_complete - random_timedelta()
         lecture.date_created = lecture.date_formation - random_timedelta()
@@ -98,17 +93,18 @@ def add_lecture(status, specialists, users, moderators):
         lecture.date_formation = random_date()
         lecture.date_created = lecture.date_formation - random_timedelta()
 
-    lecture.owner = random.choice(users)
-    lecture.moderator = random.choice(moderators)
+    if status == 3:
+        lecture.room = random.randint(200, 1000)
 
-    lecture.room = "524"
     lecture.date = random_date()
+
+    lecture.owner = owner
 
     for specialist in random.sample(list(specialists), 3):
         item = SpecialistLecture(
             lecture=lecture,
             specialist=specialist,
-            value="Прийти пораньше"
+            comment="Важный комментарий"
         )
         item.save()
 
@@ -120,22 +116,3 @@ class Command(BaseCommand):
         add_users()
         add_specialists()
         add_lectures()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

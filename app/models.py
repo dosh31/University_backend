@@ -1,7 +1,6 @@
+from django.contrib.auth.base_user import AbstractBaseUser
+from django.contrib.auth.models import PermissionsMixin, User
 from django.db import models
-from django.utils import timezone
-
-from django.contrib.auth.models import User
 
 
 class Specialist(models.Model):
@@ -11,9 +10,9 @@ class Specialist(models.Model):
     )
 
     name = models.CharField(max_length=100, verbose_name="Название")
+    description = models.TextField(max_length=500, verbose_name="Описание",)
     status = models.IntegerField(choices=STATUS_CHOICES, default=1, verbose_name="Статус")
-    image = models.ImageField(default="images/default.png")
-    description = models.TextField(verbose_name="Описание", blank=True)
+    image = models.ImageField(verbose_name="Фото", blank=True, null=True)
 
     def __str__(self):
         return self.name
@@ -22,6 +21,7 @@ class Specialist(models.Model):
         verbose_name = "Специалист"
         verbose_name_plural = "Специалисты"
         db_table = "specialists"
+        ordering = ('pk', )
 
 
 class Lecture(models.Model):
@@ -34,14 +34,14 @@ class Lecture(models.Model):
     )
 
     status = models.IntegerField(choices=STATUS_CHOICES, default=1, verbose_name="Статус")
-    date_created = models.DateTimeField(default=timezone.now(), verbose_name="Дата создания")
+    date_created = models.DateTimeField(verbose_name="Дата создания", blank=True, null=True)
     date_formation = models.DateTimeField(verbose_name="Дата формирования", blank=True, null=True)
     date_complete = models.DateTimeField(verbose_name="Дата завершения", blank=True, null=True)
 
-    owner = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Пользователь", null=True, related_name='owner')
-    moderator = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Модератор", null=True, related_name='moderator')
+    owner = models.ForeignKey(User, on_delete=models.DO_NOTHING, verbose_name="Создатель", related_name='owner', null=True)
+    moderator = models.ForeignKey(User, on_delete=models.DO_NOTHING, verbose_name="Сотрудник", related_name='moderator', blank=True,  null=True)
 
-    room = models.CharField(verbose_name="Аудитория", blank=True, null=True)
+    room = models.IntegerField(verbose_name="Аудитория", blank=True, null=True)
     date = models.DateTimeField(verbose_name="Дата занятия", blank=True, null=True)
 
     def __str__(self):
@@ -50,14 +50,14 @@ class Lecture(models.Model):
     class Meta:
         verbose_name = "Лекция"
         verbose_name_plural = "Лекции"
-        ordering = ('-date_formation', )
         db_table = "lectures"
+        ordering = ('-date_formation', )
 
 
 class SpecialistLecture(models.Model):
-    specialist = models.ForeignKey(Specialist, models.DO_NOTHING, blank=True, null=True)
-    lecture = models.ForeignKey(Lecture, models.DO_NOTHING, blank=True, null=True)
-    value = models.CharField(verbose_name="Поле м-м", blank=True, null=True)
+    specialist = models.ForeignKey(Specialist, on_delete=models.DO_NOTHING, blank=True, null=True)
+    lecture = models.ForeignKey(Lecture, on_delete=models.DO_NOTHING, blank=True, null=True)
+    comment = models.CharField(verbose_name="Поле м-м", default="Комментарий")
 
     def __str__(self):
         return "м-м №" + str(self.pk)
@@ -66,3 +66,7 @@ class SpecialistLecture(models.Model):
         verbose_name = "м-м"
         verbose_name_plural = "м-м"
         db_table = "specialist_lecture"
+        ordering = ('pk', )
+        constraints = [
+            models.UniqueConstraint(fields=['specialist', 'lecture'], name="specialist_lecture_constraint")
+        ]

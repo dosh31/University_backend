@@ -3,59 +3,58 @@ from rest_framework import serializers
 from .models import *
 
 
-class SpecialistSerializer(serializers.ModelSerializer):
+class SpecialistsSerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()
 
     def get_image(self, specialist):
-        return specialist.image.url.replace("minio", "localhost", 1)
-        
+        if specialist.image:
+            return specialist.image.url.replace("minio", "localhost", 1)
+
+        return "http://localhost:9000/images/default.png"
+
+    class Meta:
+        model = Specialist
+        fields = ("id", "name", "status", "image")
+
+
+class SpecialistSerializer(SpecialistsSerializer):
     class Meta:
         model = Specialist
         fields = "__all__"
 
 
-class UserSerializer(serializers.ModelSerializer):
+class SpecialistAddSerializer(serializers.ModelSerializer):
     class Meta:
-        model = User
-        fields = ('email', 'username')
+        model = Specialist
+        fields = ("name", "description", "image")
 
 
 class LecturesSerializer(serializers.ModelSerializer):
-    owner = serializers.SerializerMethodField()
-    moderator = serializers.SerializerMethodField()
-
-    def get_owner(self, lecture):
-        return lecture.owner.username
-
-    def get_moderator(self, lecture):
-        if lecture.moderator:
-            return lecture.moderator.username
-
-        return ""
+    owner = serializers.StringRelatedField(read_only=True)
+    moderator = serializers.StringRelatedField(read_only=True)
 
     class Meta:
         model = Lecture
         fields = "__all__"
 
 
-class LectureSerializer(serializers.ModelSerializer):
+class LectureSerializer(LecturesSerializer):
     specialists = serializers.SerializerMethodField()
-    owner = serializers.SerializerMethodField()
-    moderator = serializers.SerializerMethodField()
 
-    def get_owner(self, lecture):
-        return lecture.owner.username
-
-    def get_moderator(self, lecture):
-        return lecture.moderator.username if lecture.moderator else ""
-    
     def get_specialists(self, lecture):
         items = SpecialistLecture.objects.filter(lecture=lecture)
-        return [{**SpecialistSerializer(item.specialist).data, "value": item.value} for item in items]
-    
+        return [SpecialistItemSerializer(item.specialist, context={"comment": item.comment}).data for item in items]
+
+
+class SpecialistItemSerializer(SpecialistSerializer):
+    comment = serializers.SerializerMethodField()
+
+    def get_comment(self, _):
+        return self.context.get("comment")
+
     class Meta:
-        model = Lecture
-        fields = "__all__"
+        model = Specialist
+        fields = ("id", "name", "status", "image", "comment")
 
 
 class SpecialistLectureSerializer(serializers.ModelSerializer):
@@ -64,17 +63,27 @@ class SpecialistLectureSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class UpdateLectureStatusAdminSerializer(serializers.Serializer):
+    status = serializers.IntegerField(required=True)
+
+    
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('id', 'username', "is_superuser")
+
+
 class UserRegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('email', 'password', 'username')
+        fields = ('id', 'email', 'password', 'username')
         write_only_fields = ('password',)
         read_only_fields = ('id',)
 
     def create(self, validated_data):
         user = User.objects.create(
             email=validated_data['email'],
-            name=validated_data['name']
+            username=validated_data['username']
         )
 
         user.set_password(validated_data['password'])
@@ -86,3 +95,9 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 class UserLoginSerializer(serializers.Serializer):
     username = serializers.CharField(required=True)
     password = serializers.CharField(required=True)
+
+
+class UserProfileSerializer(serializers.Serializer):
+    username = serializers.CharField(required=False)
+    email = serializers.CharField(required=False)
+    password = serializers.CharField(required=False)
